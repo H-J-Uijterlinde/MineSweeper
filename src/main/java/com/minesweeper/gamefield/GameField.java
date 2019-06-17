@@ -39,7 +39,7 @@ public class GameField {
         int tilesPerRow = difficulty.getFieldLengthInTiles();
 
         for (int i = 1; i <= numberOfTiles; i++) {
-            gameFieldString.append(gameFieldTiles.get(i-1).toString());
+            gameFieldString.append(gameFieldTiles.get(i - 1).toString());
             if (i % (tilesPerRow) == 0) gameFieldString.append("\n");
         }
         return gameFieldString.toString();

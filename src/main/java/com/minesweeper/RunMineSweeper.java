@@ -13,7 +13,7 @@ public class RunMineSweeper {
         // This wil be the entry point of the minesweeper game.
         //TODO the main method wil have to start the gameframe.
         System.out.println("Start Game");
-        GameField newGame = GameField.startGame(DifficultyLevel.BEGINNER);
+        GameField newGame = GameField.startGame(DifficultyLevel.INTERMEDIATE);
         System.out.println(newGame.toString());
     }
 }

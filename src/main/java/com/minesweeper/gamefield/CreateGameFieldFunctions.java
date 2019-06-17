@@ -15,10 +15,11 @@ public class CreateGameFieldFunctions {
 
     public static Set<Integer> randomBombIDGenerator(DifficultyLevel difficultyLevel) {
         int numberOfBombs = difficultyLevel.getNumberOfBombs();
-        Set<Integer> bombIDs = new TreeSet<Integer>();
+        int totalTiles = difficultyLevel.getNumberOfTiles();
+        Set<Integer> bombIDs = new TreeSet<>();
         do {
-            bombIDs.add((int)(Math.random() * 64));
-        }while (bombIDs.size() < numberOfBombs);
+            bombIDs.add((int) (Math.random() * totalTiles));
+        } while (bombIDs.size() < numberOfBombs);
         return bombIDs;
     }
 

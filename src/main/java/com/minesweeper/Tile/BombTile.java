@@ -9,6 +9,6 @@ public class BombTile extends Tile {
 
     @Override
     public String toString() {
-        return "B";
+        return "B ";
     }
 }
