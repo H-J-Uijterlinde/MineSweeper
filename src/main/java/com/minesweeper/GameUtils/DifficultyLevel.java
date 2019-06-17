@@ -8,9 +8,11 @@ public enum DifficultyLevel {
     private int numberOfTiles;
     private int numberOfBombs;
     private int fieldLengthInTiles;
+    private int fieldWidthInTiles;
 
     DifficultyLevel(int fieldLengthInTiles, int fieldWidthInTiles, int numberOfBombs) {
         this.fieldLengthInTiles = fieldLengthInTiles;
+        this.fieldWidthInTiles= fieldWidthInTiles;
         this.numberOfBombs = numberOfBombs;
         this.numberOfTiles = fieldLengthInTiles * fieldWidthInTiles;
     }
@@ -25,5 +27,9 @@ public enum DifficultyLevel {
 
     public int getFieldLengthInTiles() {
         return fieldLengthInTiles;
+    }
+
+    public int getFieldWidthInTiles() {
+        return fieldWidthInTiles;
     }
 }

@@ -2,11 +2,9 @@ package com.minesweeper.gamefield;
 
 import com.minesweeper.GameUtils.DifficultyLevel;
 import com.minesweeper.Tile.Tile;
-
-import java.util.ArrayList;
 import java.util.List;
 
-import static com.minesweeper.gamefield.CreateGameFieldFunctions.*;
+import static com.minesweeper.gamefield.CreateGameFieldFunctions.createGameTiles;
 
 public class GameField {
 
@@ -14,7 +12,7 @@ public class GameField {
     private List<Tile> gameFieldTiles;
     private DifficultyLevel difficulty;
 
-    private GameField(DifficultyLevel difficultyLevel) {
+    public GameField(DifficultyLevel difficultyLevel) {
         this.gameFieldTiles = getGameFieldTiles(difficultyLevel);
         this.difficulty = difficultyLevel;
     }
@@ -43,5 +41,9 @@ public class GameField {
             if (i % (tilesPerRow) == 0) gameFieldString.append("\n");
         }
         return gameFieldString.toString();
+    }
+
+    public DifficultyLevel getDifficulty() {
+        return difficulty;
     }
 }
