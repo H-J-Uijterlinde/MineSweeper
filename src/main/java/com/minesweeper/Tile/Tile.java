@@ -2,16 +2,20 @@ package com.minesweeper.Tile;
 
 public abstract class Tile {
 
-    boolean isBomb;
-    int numBombsAtAdjacentTiles;
+    private boolean isBomb;
     private int tileID;
 
-    protected Tile(int tileID) {
+    Tile(int tileID, boolean isBomb) {
         this.tileID = tileID;
+        this.isBomb = isBomb;
     }
 
     public int getTileID() {
         return tileID;
+    }
+
+    public boolean isBomb() {
+        return this.isBomb;
     }
 
     @Override

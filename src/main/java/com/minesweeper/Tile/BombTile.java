@@ -3,8 +3,7 @@ package com.minesweeper.Tile;
 public class BombTile extends Tile {
 
     public BombTile(int tileID) {
-        super(tileID);
-        isBomb = true;
+        super(tileID, true);
     }
 
     @Override

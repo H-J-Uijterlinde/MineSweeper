@@ -13,7 +13,7 @@ public class GameField {
     private DifficultyLevel difficulty;
 
     public GameField(DifficultyLevel difficultyLevel) {
-        this.gameFieldTiles = getGameFieldTiles(difficultyLevel);
+        this.gameFieldTiles = setGameFieldTiles(difficultyLevel);
         this.difficulty = difficultyLevel;
     }
 
@@ -22,7 +22,7 @@ public class GameField {
         else return currentGame;
     }
 
-    private List<Tile> getGameFieldTiles(DifficultyLevel difficultyLevel) {
+    private List<Tile> setGameFieldTiles(DifficultyLevel difficultyLevel) {
         return createGameTiles(difficultyLevel);
     }
 
