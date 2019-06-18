@@ -11,7 +11,7 @@ import java.util.Set;
 public class RunMineSweeper {
 
     public static void main(String[] args) {
-        GameField newGame = GameField.startGame(DifficultyLevel.EXPERT);
+        GameField newGame = GameField.startGame(DifficultyLevel.BEGINNER);
 
         System.out.println(newGame.toString());
 
