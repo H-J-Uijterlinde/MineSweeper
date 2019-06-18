@@ -1,10 +1,16 @@
 package com.minesweeper;
 
+import com.minesweeper.GameUtils.DifficultyLevel;
+import com.minesweeper.UserInterface.GameInterface;
+import com.minesweeper.gamefield.GameField;
+
 public class RunMineSweeper {
 
     public static void main(String[] args) {
-        // This wil be the entry point of the minesweeper game.
-        //TODO the main method wil have to start the gameframe.
-        System.out.println("Start Game");
+        GameField newGame = GameField.startGame(DifficultyLevel.EXPERT);
+
+        System.out.println(newGame.toString());
+
+        GameInterface startGame = new GameInterface(newGame);
     }
 }
