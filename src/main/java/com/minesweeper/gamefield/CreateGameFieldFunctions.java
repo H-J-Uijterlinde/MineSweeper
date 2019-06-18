@@ -85,18 +85,16 @@ public class CreateGameFieldFunctions {
     The other vectors are based on this fact. If the current tile is on the first or last column it will have only 5
     adjacent tiles instead of 8. So this must be checked.
      */
-    private static int[] getAdjacentTileIDs(GameField gameField, int tileID) {
+    public static int[] getAdjacentTileIDs(GameField gameField, int tileID) {
         int tilesPerRow = gameField.getDifficulty().getFieldLengthInTiles();
         int[] adjacentTileIds;
         if (isFirstColumn(gameField, tileID)) {
             adjacentTileIds = new int[]{tileID + 1, tileID - tilesPerRow, tileID - tilesPerRow + 1,
                     tileID + tilesPerRow, tileID + tilesPerRow + 1};
-            System.out.println("is first column");
         } else if (isLastColumn(gameField, tileID)) {
             adjacentTileIds = new int[]{tileID - 1, tileID - tilesPerRow - 1,
                     tileID - tilesPerRow, tileID + tilesPerRow,
                     tileID + tilesPerRow - 1};
-            System.out.println("last column");
         } else {
             adjacentTileIds = new int[]{tileID - 1, tileID + 1, tileID - tilesPerRow - 1,
                     tileID - tilesPerRow, tileID - tilesPerRow + 1, tileID + tilesPerRow,

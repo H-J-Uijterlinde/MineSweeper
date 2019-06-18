@@ -28,11 +28,13 @@ public class GameInterface {
     private GameField gameField;
     private List<TileUserInterface> gameFieldTiles;
     private JLabel bombImage;
+    private boolean gameOver;
 
     public GameInterface(GameField gameField) {
         createGameSettings(gameField);
         createGameUserInterface();
         bombImage = setBombImage();
+        gameOver = false;
     }
 
     /*
@@ -71,6 +73,7 @@ public class GameInterface {
     benefits. Otherwise the gameOverSequence method in the TileUserFace innerclass below, would have to perform I/O-
     operations for every bomb tile. I/O is relatively slow.
      */
+
     private JLabel setBombImage() {
         BufferedImage image = null;
         try {
@@ -81,6 +84,10 @@ public class GameInterface {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private void setGameOver() {
+        gameOver = true;
     }
 
     /*
@@ -103,6 +110,7 @@ public class GameInterface {
         The addTiles method adds tiles to the actual visible game field. It adds the number of tiles, specified earlier
         by the difficulty. It also adds the tiles to a list game tiles for future reference.
          */
+
         private void addTiles() {
             gameFieldTiles = new ArrayList<>();
             for (int i = 0; i < NUMBER_OF_TILES; i++) {
@@ -117,12 +125,15 @@ public class GameInterface {
     The TileUserInterface class represents the actual visible tiles, the player can click on. It is called
     TileUserInterface to clearly distinguish between the GUI component and the abstraction which is just called Tile.
      */
+
     private class TileUserInterface extends JPanel {
         private int tileID;
+        private boolean isClicked;
 
         TileUserInterface(TileContainer tileContainer, int tileID) {
             super(new GridBagLayout());
             this.tileID = tileID;
+            this.isClicked = false;
             setTileAttributes(tileID);
         }
 
@@ -139,8 +150,8 @@ public class GameInterface {
         created, which acts as a class implementing MouseListener, this allows us to implement the methods for the
         different mouse events.
          */
+
         private void determineMouseActions(int tileID) {
-            //TODO: disable clicking twice.
             //TODO: disable clicking after game over.
             addMouseListener(new MouseListener() {
                 @Override
@@ -149,14 +160,17 @@ public class GameInterface {
                     // determine if the user clicked right or left using static methods from SwingUtilities.
 
                     if (SwingUtilities.isRightMouseButton(e)) {
-                        setFlagIcon();
+                        if(!isClicked() && !gameOver) setFlagIcon();
                     } else if (SwingUtilities.isLeftMouseButton(e)) {
-                        if (gameField.getGameFieldTiles().get(tileID).isBomb()) {
-                            setBombIcon();
-                            gameOverSequence(tileID);
+                        if (!isClicked() && !gameOver) {
+                            setClicked();
+                            if (gameField.getGameFieldTiles().get(tileID).isBomb()) {
+                                setBombIcon();
+                                gameOverSequence(tileID);
 
-                        } else {
-                            setNumberOfBombsIcon(gameField, tileID);
+                            } else {
+                                setNumberOfBombsIcon(gameField, tileID);
+                            }
                         }
                     }
                 }
@@ -184,29 +198,88 @@ public class GameInterface {
         }
 
         /*
+        The setFlagIcon method is called when the player right clicks on a Tile. We could seperate this method like
+        we did in the gameOverSequence method, but this method can not be called twice before first registering player
+        input, which is also slow. So the I/O- operation here will have no noticable performance effects.
+         */
+
+        private void setFlagIcon() {
+            try {
+                BufferedImage image = ImageIO.read(new File("assets/images/flag.png"));
+                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
+                add(jimage);
+                validate();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        /*
         The setNumberOfBombsIcon method determines which number icon to display after left clicking on a tile.
         It first calls on a function in the CreateGameFieldFunctions utility class to get the number of bombs in the
-        eight adjacent tiles. Then it obtains the image through an I/O operation were the url of the path is determined
-        by the number of adjacent bombs. It also changes the border from raised to lowered for visual effect.
+        eight adjacent tiles. If there is at least one bomb in the adjacent tielse, it obtains an image through
+         an I/O operation were the url of the path is determined by the number of adjacent bombs.
+         It also changes the border from raised to lowered for visual effect.
+
+        If there are no bombs in the adjacent tiles, the method enters a recursive sequence. It will get a list
+        of adjacent tiles that have not yet been clicked, and invoke itself on those tiles. This process repeats itself
+        until an area is uncovered for which the border tiles all contain number icons.
          */
+
         private void setNumberOfBombsIcon(GameField gamefield, int tileID) {
             int numberOfAdjacentBombs = CreateGameFieldFunctions.getAdjacentBombs(gamefield, tileID);
             if (numberOfAdjacentBombs > 0) {
-                try {
-                    BufferedImage image = ImageIO.read(new File("assets/images/" + numberOfAdjacentBombs + ".png"));
-                    Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                    JLabel jimage = new JLabel(new ImageIcon(scaleImage));
-                    add(jimage);
-                    setBorder(BorderFactory.createLoweredBevelBorder());
-                    validate();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                addNumberIcon(numberOfAdjacentBombs);
             } else {
-                //TODO determine zero adjacent bombs sequence
-                setFlagIcon();
-            }
+                setBorder(BorderFactory.createLoweredBevelBorder());
+                List<TileUserInterface> adjacentTiles = getUnclickedAdjacentTiles(gamefield, tileID);
 
+                for (TileUserInterface tile: adjacentTiles) {
+                    tile.setNumberOfBombsIcon(gamefield, tile.tileID);
+                }
+            }
+        }
+
+        /*
+        The getUnclickedAdjacentTiles method generates a list of actual tiles, adjacent to the current tile, with the
+        unclicked status. It first obtains an array of IDs of adjacent tiles. Then it loops through the array,
+        checking if the id is valid, if so the method checks if the corresponding tile is unclicked. If so, it adds
+        the tile to the list, and changes the status of that tile to clicked.
+
+        This last part is very important, if we dont change the clicked status, adjacent tiles with zero adjacent bombs
+        would keep adding each other to their lists of adjacent tiles, resulting in an infinite number of recursive
+        calls in the setNumberOfBombsIcon method, ending in a StackOverflow error.
+         */
+
+        private List<TileUserInterface> getUnclickedAdjacentTiles(GameField gamefield, int tileID) {
+            int[] adjacentTileIDs = CreateGameFieldFunctions.getAdjacentTileIDs(gameField, tileID);
+            int numTiles = gamefield.getDifficulty().getNumberOfTiles();
+            List<TileUserInterface> adjacentUnclickedTiles = new ArrayList<>();
+            for (int i : adjacentTileIDs) {
+                if (i>0 && i<numTiles) {
+                    TileUserInterface tile = gameFieldTiles.get(i);
+                    if (!tile.isClicked()){
+                        tile.setClicked();
+                        adjacentUnclickedTiles.add(tile);
+                    }
+                }
+            }
+            return adjacentUnclickedTiles;
+        }
+
+        // The addNumberIcon method is identical to the addFlag method.
+        private void addNumberIcon(int numberOfAdjacentBombs) {
+            try {
+                BufferedImage image = ImageIO.read(new File("assets/images/" + numberOfAdjacentBombs + ".png"));
+                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
+                add(jimage);
+                setBorder(BorderFactory.createLoweredBevelBorder());
+                validate();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         /*
@@ -235,7 +308,7 @@ public class GameInterface {
                             .forEach((t) -> {
                                 t.setBombIcon();
                                 try {
-                                    Thread.sleep(5);
+                                    Thread.sleep(10);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
@@ -246,33 +319,26 @@ public class GameInterface {
                 }
             });
             t.start();
+            setGameOver();
         }
 
         private void setBombIcon() {
+            setClicked();
             add(bombImage);
             setBorder(BorderFactory.createLoweredBevelBorder());
             validate();
         }
 
-        /*
-        The setFlagIcon method is called when the player right clicks on a Tile. We could seperate this method like
-        we did in the gameOverSequence method, but this method can not be called twice before first registering player
-        input, which is also slow. So the I/O- operation here will have no noticable performance effects.
-         */
-        private void setFlagIcon() {
-            try {
-                BufferedImage image = ImageIO.read(new File("assets/images/flag.png"));
-                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
-                add(jimage);
-                validate();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        private int getTileID() {
+            return tileID;
         }
 
-        public int getTileID() {
-            return tileID;
+        private boolean isClicked() {
+            return isClicked;
+        }
+
+        void setClicked() {
+            isClicked = true;
         }
     }
 }
