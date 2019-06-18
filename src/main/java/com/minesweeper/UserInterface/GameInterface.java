@@ -20,6 +20,10 @@ game engine. The GameInterface class will contain private innerclasses for all t
 Using inner classes is convenient because they can access GameInterface instance variables, which they will often need.
  */
 
+//Todo add a menu bar, with at least a reset button, a select difficulty option, and exit.
+//Todo display number of bomb left
+//Todo display score
+
 public class GameInterface {
 
     private int NUMBER_OF_ROWS;
@@ -29,6 +33,7 @@ public class GameInterface {
     private List<TileUserInterface> gameFieldTiles;
     private JLabel bombImage;
     private boolean gameOver;
+    private JFrame gameFieldUserInterface;
 
     public GameInterface(GameField gameField) {
         createGameSettings(gameField);
@@ -44,7 +49,7 @@ public class GameInterface {
      */
 
     private void createGameUserInterface() {
-        JFrame gameFieldUserInterface = new JFrame("Mine Sweeper Project");
+        gameFieldUserInterface = new JFrame("Mine Sweeper Project");
         gameFieldUserInterface.setIconImage(new ImageIcon("assets/images/bombjpg.jpg").getImage());
         gameFieldUserInterface.setLayout(new BorderLayout());
         Dimension GAME_FIELD_DIMENSION = new Dimension(800, 800);
@@ -85,6 +90,10 @@ public class GameInterface {
         }
         return null;
     }
+    /*
+    TODO this method must display some sort of panel printing Game Over, ultimately this panel would have a start new
+    game button.
+     */
 
     private void setGameOver() {
         gameOver = true;
@@ -152,7 +161,6 @@ public class GameInterface {
          */
 
         private void determineMouseActions(int tileID) {
-            //TODO: disable clicking after game over.
             addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -160,9 +168,11 @@ public class GameInterface {
                     // determine if the user clicked right or left using static methods from SwingUtilities.
 
                     if (SwingUtilities.isRightMouseButton(e)) {
-                        if(!isClicked() && !gameOver) setFlagIcon();
+                        removeAll();
+                        if (!isClicked() && !gameOver) setFlagIcon();
                     } else if (SwingUtilities.isLeftMouseButton(e)) {
                         if (!isClicked() && !gameOver) {
+                            removeAll();
                             setClicked();
                             if (gameField.getGameFieldTiles().get(tileID).isBomb()) {
                                 setBombIcon();
@@ -235,7 +245,7 @@ public class GameInterface {
                 setBorder(BorderFactory.createLoweredBevelBorder());
                 List<TileUserInterface> adjacentTiles = getUnclickedAdjacentTiles(gamefield, tileID);
 
-                for (TileUserInterface tile: adjacentTiles) {
+                for (TileUserInterface tile : adjacentTiles) {
                     tile.setNumberOfBombsIcon(gamefield, tile.tileID);
                 }
             }
@@ -257,9 +267,9 @@ public class GameInterface {
             int numTiles = gamefield.getDifficulty().getNumberOfTiles();
             List<TileUserInterface> adjacentUnclickedTiles = new ArrayList<>();
             for (int i : adjacentTileIDs) {
-                if (i>0 && i<numTiles) {
+                if (i > 0 && i < numTiles) {
                     TileUserInterface tile = gameFieldTiles.get(i);
-                    if (!tile.isClicked()){
+                    if (!tile.isClicked()) {
                         tile.setClicked();
                         adjacentUnclickedTiles.add(tile);
                     }
@@ -306,6 +316,7 @@ public class GameInterface {
                             .filter(t -> gameField.getGameFieldTiles().get(t.getTileID()).isBomb())
                             .filter(t -> t.getTileID() != clickedTileID)
                             .forEach((t) -> {
+                                t.removeAll();
                                 t.setBombIcon();
                                 try {
                                     Thread.sleep(10);
@@ -313,13 +324,17 @@ public class GameInterface {
                                     e.printStackTrace();
                                 }
                             });
-
-                    //TODO Create some sort of JPanel that shows game over!
-                    System.out.println("Game Over!");
                 }
             });
             t.start();
             setGameOver();
+            displayGameOver();
+        }
+
+        private void displayGameOver() {
+            /*final JOptionPane optionPane = new JOptionPane("Game over\n \n Start again?",
+                    JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION);*/
+            JOptionPane.showMessageDialog(gameFieldUserInterface, "Game Over!");
         }
 
         private void setBombIcon() {
