@@ -12,7 +12,7 @@ public class GameField {
     private List<Tile> gameFieldTiles;
     private DifficultyLevel difficulty;
 
-    public GameField(DifficultyLevel difficultyLevel) {
+    private GameField(DifficultyLevel difficultyLevel) {
         this.gameFieldTiles = setGameFieldTiles(difficultyLevel);
         this.difficulty = difficultyLevel;
     }

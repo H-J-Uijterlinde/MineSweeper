@@ -1,5 +1,6 @@
 package com.minesweeper.UserInterface;
 
+import com.minesweeper.GameUtils.DifficultyLevel;
 import com.minesweeper.gamefield.CreateGameFieldFunctions;
 import com.minesweeper.gamefield.GameField;
 
@@ -29,11 +30,13 @@ public class GameInterface {
     private int NUMBER_OF_ROWS;
     private int NUMBER_OF_COLUMNS;
     private int NUMBER_OF_TILES;
+    private int NUMBER_OF_BOMBS;
     private GameField gameField;
     private List<TileUserInterface> gameFieldTiles;
     private JLabel bombImage;
     private boolean gameOver;
     private JFrame gameFieldUserInterface;
+    private int totalClickedtiles;
 
     public GameInterface(GameField gameField) {
         createGameSettings(gameField);
@@ -68,9 +71,10 @@ public class GameInterface {
 
     private void createGameSettings(GameField gameField) {
         this.gameField = gameField;
-        this.NUMBER_OF_ROWS = gameField.getDifficulty().getFieldWidthInTiles();
+        NUMBER_OF_ROWS = gameField.getDifficulty().getFieldWidthInTiles();
         NUMBER_OF_COLUMNS = gameField.getDifficulty().getFieldLengthInTiles();
         NUMBER_OF_TILES = gameField.getDifficulty().getNumberOfTiles();
+        NUMBER_OF_BOMBS = gameField.getDifficulty().getNumberOfBombs();
     }
 
     /*
@@ -90,13 +94,13 @@ public class GameInterface {
         }
         return null;
     }
-    /*
-    TODO this method must display some sort of panel printing Game Over, ultimately this panel would have a start new
-    game button.
-     */
 
     private void setGameOver() {
         gameOver = true;
+    }
+
+    private void resetGameOver() {
+        gameOver = false;
     }
 
     /*
@@ -128,6 +132,17 @@ public class GameInterface {
                 add(tile);
             }
         }
+
+        void resetGame() {
+            removeAll();
+            DifficultyLevel currentDifficulty = gameField.getDifficulty();
+            gameField = GameField.startGame(currentDifficulty);
+            addTiles();
+            validate();
+            resetGameOver();
+            totalClickedtiles = 0;
+            System.out.println(gameField);
+        }
     }
 
     /*
@@ -138,11 +153,13 @@ public class GameInterface {
     private class TileUserInterface extends JPanel {
         private int tileID;
         private boolean isClicked;
+        private TileContainer container;
 
         TileUserInterface(TileContainer tileContainer, int tileID) {
             super(new GridBagLayout());
             this.tileID = tileID;
             this.isClicked = false;
+            this.container = tileContainer;
             setTileAttributes(tileID);
         }
 
@@ -180,6 +197,8 @@ public class GameInterface {
 
                             } else {
                                 setNumberOfBombsIcon(gameField, tileID);
+                                System.out.println(totalClickedtiles);
+                                determineVictory();
                             }
                         }
                     }
@@ -262,12 +281,12 @@ public class GameInterface {
         calls in the setNumberOfBombsIcon method, ending in a StackOverflow error.
          */
 
-        private List<TileUserInterface> getUnclickedAdjacentTiles(GameField gamefield, int tileID) {
+        private synchronized List<TileUserInterface> getUnclickedAdjacentTiles(GameField gamefield, int tileID) {
             int[] adjacentTileIDs = CreateGameFieldFunctions.getAdjacentTileIDs(gameField, tileID);
             int numTiles = gamefield.getDifficulty().getNumberOfTiles();
             List<TileUserInterface> adjacentUnclickedTiles = new ArrayList<>();
             for (int i : adjacentTileIDs) {
-                if (i > 0 && i < numTiles) {
+                if (i >= 0 && i < numTiles) {
                     TileUserInterface tile = gameFieldTiles.get(i);
                     if (!tile.isClicked()) {
                         tile.setClicked();
@@ -289,6 +308,16 @@ public class GameInterface {
                 validate();
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+
+        private void determineVictory() {
+            int tilesToClick = NUMBER_OF_TILES - NUMBER_OF_BOMBS;
+            if (tilesToClick - totalClickedtiles == 0) {
+                setGameOver();
+                displayEndMessage("assets/images/boom.png",
+                        "Would you like to play again?",
+                        "Victorious");
             }
         }
 
@@ -326,15 +355,31 @@ public class GameInterface {
                             });
                 }
             });
+            new Thread(() -> displayEndMessage("assets/images/boom.png", "Would you like to play again?", "Game over!")).start();
             t.start();
             setGameOver();
-            displayGameOver();
         }
 
-        private void displayGameOver() {
-            /*final JOptionPane optionPane = new JOptionPane("Game over\n \n Start again?",
-                    JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION);*/
-            JOptionPane.showMessageDialog(gameFieldUserInterface, "Game Over!");
+        private void displayEndMessage(String url, String message, String title) {
+            BufferedImage image;
+            try {
+                image = ImageIO.read(new File(url));
+                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                ImageIcon gameOverIcon = new ImageIcon(scaleImage);
+                int n = JOptionPane.showConfirmDialog(gameFieldUserInterface,
+                        message,
+                        title,
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        gameOverIcon);
+                if (n == 0) {
+                    container.resetGame();
+                } else if (n == 1) {
+                    System.exit(0);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         private void setBombIcon() {
@@ -354,6 +399,7 @@ public class GameInterface {
 
         void setClicked() {
             isClicked = true;
+            totalClickedtiles++;
         }
     }
 }
