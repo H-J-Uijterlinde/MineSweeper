@@ -1,5 +1,12 @@
 package com.minesweeper.GameUtils;
 
+/*
+The enum Difficulty level provides the constant values a player can choose to set the difficulty. The creation of the
+gamefield, both abstract and visual, is dependent on the selected Difficulty level. The enum contains a constructor
+which sets the number of bombs and tiles, and the fieldlength and fieldwith, based on the selected constant.
+The enum also provides methods to obtain those values.
+ */
+
 public enum DifficultyLevel {
     BEGINNER(8, 8, 10),
     INTERMEDIATE(16, 16, 40),

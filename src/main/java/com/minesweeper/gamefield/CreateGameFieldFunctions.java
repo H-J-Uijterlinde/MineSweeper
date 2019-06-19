@@ -23,12 +23,13 @@ public class CreateGameFieldFunctions {
 
         Set<Integer> bombIDs = randomBombIDGenerator(difficultyLevel);
         int numberOfTiles = difficultyLevel.getNumberOfTiles();
-        List<Tile> gameTiles = new ArrayList<>(numberOfTiles);
+        List<Tile> gameTiles = new ArrayList<>();
 
         for (int index = 0; index < numberOfTiles; index++) {
             if (bombIDs.contains(index)) gameTiles.add(new BombTile(index));
             else gameTiles.add(new NormalTile(index));
         }
+        System.out.println(gameTiles.size());
         return gameTiles;
     }
 
@@ -44,7 +45,7 @@ public class CreateGameFieldFunctions {
         int totalTiles = difficultyLevel.getNumberOfTiles();
         Set<Integer> bombIDs = new TreeSet<>();
         do {
-            bombIDs.add((int) (Math.random() * (totalTiles - 1)));
+            bombIDs.add((int) (Math.random() * (totalTiles)));
         } while (bombIDs.size() < numberOfBombs);
         return bombIDs;
     }
