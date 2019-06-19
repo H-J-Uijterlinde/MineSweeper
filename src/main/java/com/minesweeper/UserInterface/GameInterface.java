@@ -20,8 +20,6 @@ game engine. The GameInterface class will contain private innerclasses for all t
 Using inner classes is convenient because they can access GameInterface instance variables, which they will often need.
  */
 
-//Todo display number of tiles left to click
-
 public class GameInterface {
 
     private int NUMBER_OF_ROWS;
@@ -35,6 +33,7 @@ public class GameInterface {
     private JFrame gameFieldUserInterface;
     private TileContainer tileContainer;
     private int totalClickedtiles;
+    private displayScorePanel scorePanel;
 
     public GameInterface(GameField gameField) {
         createGameSettings(gameField);
@@ -56,6 +55,8 @@ public class GameInterface {
         Dimension GAME_FIELD_DIMENSION = new Dimension(800, 800);
         gameFieldUserInterface.setSize(GAME_FIELD_DIMENSION);
         tileContainer = new TileContainer();
+        scorePanel = new displayScorePanel();
+        gameFieldUserInterface.add(scorePanel, BorderLayout.SOUTH);
         gameFieldUserInterface.add(tileContainer, BorderLayout.CENTER);
         gameFieldUserInterface.setLocationRelativeTo(null);
         gameFieldUserInterface.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -140,6 +141,7 @@ public class GameInterface {
         return selectDifficultyMenu;
     }
 
+
     /*
     The Method setBombImage is added here, because caching the bomb image on starting the game gives great performance
     benefits. Otherwise the gameOverSequence method in the TileUserFace innerclass below, would have to perform I/O-
@@ -211,6 +213,7 @@ public class GameInterface {
             validate();
             resetGameOver();
             totalClickedtiles = 0;
+            scorePanel.displayScore();
             System.out.println(gameField);
         }
 
@@ -222,6 +225,7 @@ public class GameInterface {
             validate();
             resetGameOver();
             totalClickedtiles = 0;
+            scorePanel.displayScore();
             System.out.println(gameField);
         }
     }
@@ -279,6 +283,7 @@ public class GameInterface {
                             } else {
                                 setNumberOfBombsIcon(gameField, tileID);
                                 determineVictory();
+                                scorePanel.displayScore();
                             }
                         }
                     }
@@ -494,6 +499,22 @@ public class GameInterface {
         void setClicked() {
             isClicked = true;
             totalClickedtiles++;
+        }
+    }
+
+    private class displayScorePanel extends JPanel {
+
+        displayScorePanel() {
+            setPreferredSize(new Dimension(100,25));
+            add(new JLabel("Tiles left: " + (NUMBER_OF_TILES - NUMBER_OF_BOMBS)));
+            validate();
+        }
+
+        private void displayScore() {
+            int tilesLeft = (NUMBER_OF_TILES - NUMBER_OF_BOMBS) - totalClickedtiles;
+            removeAll();
+            add(new JLabel("Tiles left: " + tilesLeft));
+            validate();
         }
     }
 }
