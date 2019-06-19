@@ -7,8 +7,7 @@ import com.minesweeper.gamefield.GameField;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -21,9 +20,7 @@ game engine. The GameInterface class will contain private innerclasses for all t
 Using inner classes is convenient because they can access GameInterface instance variables, which they will often need.
  */
 
-//Todo add a menu bar, with at least a reset button, a select difficulty option, and exit.
-//Todo display number of bomb left
-//Todo display score
+//Todo display number of tiles left to click
 
 public class GameInterface {
 
@@ -36,6 +33,7 @@ public class GameInterface {
     private JLabel bombImage;
     private boolean gameOver;
     private JFrame gameFieldUserInterface;
+    private TileContainer tileContainer;
     private int totalClickedtiles;
 
     public GameInterface(GameField gameField) {
@@ -57,9 +55,11 @@ public class GameInterface {
         gameFieldUserInterface.setLayout(new BorderLayout());
         Dimension GAME_FIELD_DIMENSION = new Dimension(800, 800);
         gameFieldUserInterface.setSize(GAME_FIELD_DIMENSION);
-        gameFieldUserInterface.add(new TileContainer(), BorderLayout.CENTER);
+        tileContainer = new TileContainer();
+        gameFieldUserInterface.add(tileContainer, BorderLayout.CENTER);
         gameFieldUserInterface.setLocationRelativeTo(null);
         gameFieldUserInterface.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        gameFieldUserInterface.add(createMenu(), BorderLayout.NORTH);
         gameFieldUserInterface.setVisible(true);
     }
 
@@ -75,6 +75,69 @@ public class GameInterface {
         NUMBER_OF_COLUMNS = gameField.getDifficulty().getFieldLengthInTiles();
         NUMBER_OF_TILES = gameField.getDifficulty().getNumberOfTiles();
         NUMBER_OF_BOMBS = gameField.getDifficulty().getNumberOfBombs();
+    }
+
+    /*
+    In this next section the menu bar wil be created. The first step is creating a JMenuBar object, which can be added
+    to the the top-level container. The JMenuBar can hold JMenu objects, which represent the different options the
+    player sees in the menu bar.
+     */
+
+    private JMenuBar createMenu() {
+        JMenuBar menu = new JMenuBar();
+        menu.add(createOptionsMenu());
+        return menu;
+    }
+
+    /*
+    The createOptionsMenu method generates the first JMenu object to be added to the menu bar. The options menu will
+    contain options for restarting the game, selecting difficulty and exiting the game. The JMenu is populated with
+    JMenuItems. Each option is either a JMenuItem, or a JMenu on its own, in which case a submenu is created.
+    To increase readability the creation of the select difficulty submenu is done in its own method. Listening for
+    events like the player selection an option is explained in the create DifficultySubMenu method.
+     */
+
+    private JMenu createOptionsMenu() {
+        JMenu optionsMenu = new JMenu("Options");
+        JMenuItem restartGameOption = new JMenuItem("Restart");
+        restartGameOption.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.SHIFT_MASK));
+        JMenuItem exitOption = new JMenuItem("Exit");
+        restartGameOption.addActionListener((e) -> tileContainer.resetGame());
+        exitOption.addActionListener((e) -> System.exit(0));
+        optionsMenu.add(restartGameOption);
+        optionsMenu.addSeparator();
+        optionsMenu.add(createDifficultySubMenu());
+        optionsMenu.addSeparator();
+        optionsMenu.add(exitOption);
+        return optionsMenu;
+    }
+
+    /*
+    The createDifficultySubmenu method is similar to the createOptionsMenu method in that it adds JMenu items to a
+    JMenu. For each JMenu item it adds an actionListener. The addActionListener method of a JMenuItem takes an
+    ActionListener as its argument. ActionListener is a functional interface, meaning it has only one abstract method.
+    Functional interfaces can be implemented creating anonymous inner classes, with lamba expressions, or in some cases
+    method references. The functional method of the ActionListener interface is actionPerformed, in this case it is
+    implemented using lambda expressions.
+     */
+
+    private JMenu createDifficultySubMenu() {
+        JMenu selectDifficultyMenu = new JMenu("Select difficulty");
+        ButtonGroup difficultyButtonGroup = new ButtonGroup();
+        JMenuItem beginnerButton = new JRadioButtonMenuItem("Beginner");
+        beginnerButton.setSelected(true);
+        difficultyButtonGroup.add(beginnerButton);
+        JMenuItem intermediateButton = new JRadioButtonMenuItem("Intermediate");
+        JMenuItem expertButton = new JRadioButtonMenuItem("Expert");
+        beginnerButton.addActionListener((e) -> tileContainer.resetGame(DifficultyLevel.BEGINNER));
+        intermediateButton.addActionListener((e) -> tileContainer.resetGame(DifficultyLevel.INTERMEDIATE));
+        expertButton.addActionListener((e) -> tileContainer.resetGame(DifficultyLevel.EXPERT));
+        difficultyButtonGroup.add(intermediateButton);
+        difficultyButtonGroup.add(expertButton);
+        selectDifficultyMenu.add(beginnerButton);
+        selectDifficultyMenu.add(intermediateButton);
+        selectDifficultyMenu.add(expertButton);
+        return selectDifficultyMenu;
     }
 
     /*
@@ -133,10 +196,28 @@ public class GameInterface {
             }
         }
 
+        /*
+        The resetGame method removes all tiles from the tileContainer, it then starts a new game, generating a new
+        random list of tiles. It also cals the addTiles method again, adding new TilesUserInterfaces to the container.
+        There is also an overloaded version of resetGame which takes a DifficultyLevel as an argument. This makes it
+        easier to implement an option with which a player can choose the desired difficulty.
+         */
+
         void resetGame() {
             removeAll();
             DifficultyLevel currentDifficulty = gameField.getDifficulty();
             gameField = GameField.startGame(currentDifficulty);
+            addTiles();
+            validate();
+            resetGameOver();
+            totalClickedtiles = 0;
+            System.out.println(gameField);
+        }
+
+        void resetGame(DifficultyLevel difficulty) {
+            createGameSettings(GameField.startGame(difficulty));
+            tileContainer.setLayout(new GridLayout(NUMBER_OF_ROWS, NUMBER_OF_COLUMNS));
+            removeAll();
             addTiles();
             validate();
             resetGameOver();
@@ -197,7 +278,6 @@ public class GameInterface {
 
                             } else {
                                 setNumberOfBombsIcon(gameField, tileID);
-                                System.out.println(totalClickedtiles);
                                 determineVictory();
                             }
                         }
@@ -311,11 +391,17 @@ public class GameInterface {
             }
         }
 
+        /*
+        The determine if a player has successfully completed the game whe have to keep track of how many tiles the
+        player has clicked on (only left clicks increase the counter), and compare that to the number of tiles that are
+        not bombs. If the player successfully completed the game, the displayEndMessage method is called.
+         */
+
         private void determineVictory() {
             int tilesToClick = NUMBER_OF_TILES - NUMBER_OF_BOMBS;
             if (tilesToClick - totalClickedtiles == 0) {
                 setGameOver();
-                displayEndMessage("assets/images/boom.png",
+                displayEndMessage("assets/images/victory.png",
                         "Would you like to play again?",
                         "Victorious");
             }
@@ -355,10 +441,18 @@ public class GameInterface {
                             });
                 }
             });
-            new Thread(() -> displayEndMessage("assets/images/boom.png", "Would you like to play again?", "Game over!")).start();
+            new Thread(() -> displayEndMessage("assets/images/boom.png",
+                    "Would you like to play again?",
+                    "Game over!")).start();
             t.start();
             setGameOver();
         }
+
+        /*
+        The displayEndMessage first creates an icon based on the url of path provided. It then creates a Yes/ No
+        question dialog. The message displayed and the title of the dialog can be provided as parameters when calling
+        this method.
+         */
 
         private void displayEndMessage(String url, String message, String title) {
             BufferedImage image;
