@@ -7,7 +7,7 @@ import com.minesweeper.gamefield.GameField;
 public class RunMineSweeper {
 
     public static void main(String[] args) {
-        GameField newGame = GameField.startGame(DifficultyLevel.BEGINNER);
+        GameField newGame = GameField.getGame(DifficultyLevel.BEGINNER);
 
         System.out.println(newGame.toString());
 

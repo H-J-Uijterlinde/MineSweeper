@@ -208,7 +208,7 @@ public class GameInterface {
         void resetGame() {
             removeAll();
             DifficultyLevel currentDifficulty = gameField.getDifficulty();
-            gameField = GameField.startGame(currentDifficulty);
+            gameField = GameField.restartGame(currentDifficulty);
             addTiles();
             validate();
             resetGameOver();
@@ -218,7 +218,7 @@ public class GameInterface {
         }
 
         void resetGame(DifficultyLevel difficulty) {
-            createGameSettings(GameField.startGame(difficulty));
+            createGameSettings(GameField.restartGame(difficulty));
             tileContainer.setLayout(new GridLayout(NUMBER_OF_ROWS, NUMBER_OF_COLUMNS));
             removeAll();
             addTiles();
@@ -502,6 +502,11 @@ public class GameInterface {
         }
     }
 
+    /*
+    The displayScorePanel is a JPanel that holds another JPanel which displays the number of tiles the player still
+    has to click on to win the game. It has one method, displayScore, which resets the JLabel containing the score.
+     */
+
     private class displayScorePanel extends JPanel {
 
         displayScorePanel() {
@@ -511,7 +516,7 @@ public class GameInterface {
         }
 
         private void displayScore() {
-            int tilesLeft = (NUMBER_OF_TILES - NUMBER_OF_BOMBS) - totalClickedtiles;
+            int tilesLeft = NUMBER_OF_TILES - NUMBER_OF_BOMBS - totalClickedtiles;
             removeAll();
             add(new JLabel("Tiles left: " + tilesLeft));
             validate();
