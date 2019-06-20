@@ -11,6 +11,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +51,7 @@ public class GameInterface {
 
     private void createGameUserInterface() {
         gameFieldUserInterface = new JFrame("Mine Sweeper Project");
-        gameFieldUserInterface.setIconImage(new ImageIcon("assets/images/bombjpg.jpg").getImage());
+        gameFieldUserInterface.setIconImage((imageLoader("images/boom.png")));
         gameFieldUserInterface.setLayout(new BorderLayout());
         Dimension GAME_FIELD_DIMENSION = new Dimension(800, 800);
         gameFieldUserInterface.setSize(GAME_FIELD_DIMENSION);
@@ -146,14 +147,47 @@ public class GameInterface {
     The Method setBombImage is added here, because caching the bomb image on starting the game gives great performance
     benefits. Otherwise the gameOverSequence method in the TileUserFace innerclass below, would have to perform I/O-
     operations for every bomb tile. I/O is relatively slow.
+
+    I changed to way to get images to enable packaging the application into a single executable jar. I originally used
+    the following method:
+
+            try {
+                BufferedImage image = ImageIO.read(new File("src/main/resources/images/bomb.png"));
+                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
+                add(jimage);
+                validate();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+     However this requires changing the path before packaging, because the maven packaging will put the images in the
+     target class. And the src directory is no longer on the classpath.
      */
 
     private JLabel setBombImage() {
-        BufferedImage image = null;
+        Image image = imageLoader("images/bomb.png")
+                .getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+
+        return new JLabel(new ImageIcon(image));
+    }
+
+    /*
+    The imageLoader method was added later to facilitate packaging. It first obtains the context Classloader of the
+    currently executing thread. A ClassLoader is either a java class, or an instance written in system native code,
+    which is responsible for dynamically loading classes into your application when they are needed.
+
+    The getResource method of a ClassLoader can take a path relative to the classpath. It recursively passes the method
+    up the ClassLoader hierarchy until one of the ClassLoaders is able to find the specified path. It then returns a
+    URL object which can be used for reading the resource.
+     */
+
+    private Image imageLoader(String pathAndFileName) {
+        URL url = Thread.currentThread().getContextClassLoader().getResource(pathAndFileName);
         try {
-            image = ImageIO.read(new File("assets/images/bomb.png"));
-            Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-            return new JLabel(new ImageIcon(scaleImage));
+            if (url != null) {
+                return ImageIO.read(url);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -318,15 +352,11 @@ public class GameInterface {
          */
 
         private void setFlagIcon() {
-            try {
-                BufferedImage image = ImageIO.read(new File("assets/images/flag.png"));
-                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
-                add(jimage);
-                validate();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Image image = imageLoader("images/flag.png")
+                    .getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            JLabel jimage = new JLabel(new ImageIcon(image));
+            add(jimage);
+            validate();
         }
 
         /*
@@ -384,16 +414,12 @@ public class GameInterface {
 
         // The addNumberIcon method is identical to the addFlag method.
         private void addNumberIcon(int numberOfAdjacentBombs) {
-            try {
-                BufferedImage image = ImageIO.read(new File("assets/images/" + numberOfAdjacentBombs + ".png"));
-                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                JLabel jimage = new JLabel(new ImageIcon(scaleImage));
-                add(jimage);
-                setBorder(BorderFactory.createLoweredBevelBorder());
-                validate();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Image image = imageLoader("images/" + numberOfAdjacentBombs + ".png")
+                    .getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            JLabel jimage = new JLabel(new ImageIcon(image));
+            add(jimage);
+            setBorder(BorderFactory.createLoweredBevelBorder());
+            validate();
         }
 
         /*
@@ -406,7 +432,7 @@ public class GameInterface {
             int tilesToClick = NUMBER_OF_TILES - NUMBER_OF_BOMBS;
             if (tilesToClick - totalClickedtiles == 0) {
                 setGameOver();
-                displayEndMessage("assets/images/victory.png",
+                displayEndMessage("images/victory.png",
                         "Would you like to play again?",
                         "Victorious");
             }
@@ -446,7 +472,7 @@ public class GameInterface {
                             });
                 }
             });
-            new Thread(() -> displayEndMessage("assets/images/boom.png",
+            new Thread(() -> displayEndMessage("images/boom.png",
                     "Would you like to play again?",
                     "Game over!")).start();
             t.start();
@@ -460,24 +486,19 @@ public class GameInterface {
          */
 
         private void displayEndMessage(String url, String message, String title) {
-            BufferedImage image;
-            try {
-                image = ImageIO.read(new File(url));
-                Image scaleImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                ImageIcon gameOverIcon = new ImageIcon(scaleImage);
-                int n = JOptionPane.showConfirmDialog(gameFieldUserInterface,
-                        message,
-                        title,
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        gameOverIcon);
-                if (n == 0) {
-                    container.resetGame();
-                } else if (n == 1) {
-                    System.exit(0);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            Image image = imageLoader(url)
+                    .getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            ImageIcon gameOverIcon = new ImageIcon(image);
+            int n = JOptionPane.showConfirmDialog(gameFieldUserInterface,
+                    message,
+                    title,
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    gameOverIcon);
+            if (n == 0) {
+                container.resetGame();
+            } else if (n == 1) {
+                System.exit(0);
             }
         }
 
@@ -510,7 +531,7 @@ public class GameInterface {
     private class displayScorePanel extends JPanel {
 
         displayScorePanel() {
-            setPreferredSize(new Dimension(100,25));
+            setPreferredSize(new Dimension(100, 25));
             add(new JLabel("Tiles left: " + (NUMBER_OF_TILES - NUMBER_OF_BOMBS)));
             validate();
         }
