@@ -8,7 +8,7 @@ Ultimately packaging it for distribution.
 After cloning the source code run, the following command from the applications root directory (for windows):
 mvn clean package
 
-this produces an executable jar file which can be run from the applications target folder by running the following command: 
+This produces an executable jar file which can be run from the applications target folder by running the following command: 
 java -jar MineSweeper-1.0-SNAPSHOT.jar
 
 you can move the jar file from the applications target directory to anywhere you like, and run it just by double clicking on it.
@@ -21,5 +21,4 @@ I will keep collecting stories for the backlog untill they consitute enough work
 In the mean time I will work on new projects.
 
 # 20-06-2019
-Decided to implement one additional change, considering my primary goal was to produce an executable .jar file, which can be also be distributed as a single file. This required some changes, primarily in the way that the application loads it resources, like images.
-Information on how this was achieved can be found in the comments inside the code.
+I decided to implement one additional change, considering my primary goal was to produce an executable .jar file, which can be also be distributed as a single file. This required some changes, primarily in the way that the application loads it resources, like images. Information on how this was achieved can be found in the comments inside the code.
