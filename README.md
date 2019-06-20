@@ -11,8 +11,7 @@ mvn clean package
 this produces an executable jar file which can be run from the applications target folder by running the following command: 
 java -jar MineSweeper-1.0-SNAPSHOT.jar
 
-you can move the jar file from to applications target directory to anywhere you like, and run it just bij doulbe clicking on it.
-
+you can move the jar file from the applications target directory to anywhere you like, and run it just bij double clicking on it.
 
 # 19-06-2019
 The first 'sprint' so to speak is finished resulting in an MVP.
