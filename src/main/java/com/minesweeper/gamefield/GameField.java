@@ -23,12 +23,12 @@ makes it a singleton. It is still immutable.
 
 public class GameField {
 
-    private static GameField currentGame;
+//    private static GameField currentGame;
     private List<Tile> gameFieldTiles;
     private DifficultyLevel difficulty;
 
-    private GameField(DifficultyLevel difficultyLevel) {
-        this.gameFieldTiles = setGameFieldTiles(difficultyLevel);
+    private GameField(DifficultyLevel difficultyLevel, int tileID) {
+        this.gameFieldTiles = setGameFieldTiles(difficultyLevel, tileID);
         this.difficulty = difficultyLevel;
     }
 
@@ -37,17 +37,16 @@ public class GameField {
     factory method. I left it in for illustration purposes.
      */
 
-    public static GameField getGame(DifficultyLevel difficultyLevel) {
-        if (currentGame == null) {
-            currentGame = new GameField(difficultyLevel);
-            return currentGame;
-        }
-        else return currentGame;
-    }
+//    public static GameField getGame(DifficultyLevel difficultyLevel) {
+//        if (currentGame == null) {
+//            currentGame = new GameField(difficultyLevel);
+//            return currentGame;
+//        }
+//        else return currentGame;
+//    }
 
-    public static GameField restartGame(DifficultyLevel difficultyLevel) {
-        currentGame = new GameField(difficultyLevel);
-        return currentGame;
+    public static GameField restartGame(DifficultyLevel difficultyLevel, int tileID) {
+        return new GameField(difficultyLevel, tileID);
     }
 
     /*
@@ -55,8 +54,8 @@ public class GameField {
     CreateGameFieldFunctions class, which does the actual work. In hindsight the setGameFieldTiles method here is
     probably redundant. I left it in for illustration purposes, mainly to be better able to discuss design choices.
      */
-    private List<Tile> setGameFieldTiles(DifficultyLevel difficultyLevel) {
-        return createGameTiles(difficultyLevel);
+    private List<Tile> setGameFieldTiles(DifficultyLevel difficultyLevel, int tileID) {
+        return createGameTiles(difficultyLevel, tileID);
     }
 
     public List<Tile> getGameFieldTiles() {

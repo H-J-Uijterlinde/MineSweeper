@@ -20,9 +20,10 @@ public class CreateGameFieldFunctions {
     If the index where a tile will be added corresponds to an index in the set of bombIDs, at that index a new
     BombTile will be added.
      */
-    static List<Tile> createGameTiles(DifficultyLevel difficultyLevel) {
 
-        Set<Integer> bombIDs = randomBombIDGenerator(difficultyLevel);
+    static List<Tile> createGameTiles(DifficultyLevel difficultyLevel, int tileID) {
+
+        Set<Integer> bombIDs = randomBombIDGenerator(difficultyLevel, tileID);
         int numberOfTiles = difficultyLevel.getNumberOfTiles();
         List<Tile> gameTiles = new ArrayList<>();
 
@@ -30,7 +31,6 @@ public class CreateGameFieldFunctions {
             if (bombIDs.contains(index)) gameTiles.add(new BombTile(index));
             else gameTiles.add(new NormalTile(index));
         }
-        System.out.println(gameTiles.size());
         return gameTiles;
     }
 
@@ -41,12 +41,23 @@ public class CreateGameFieldFunctions {
     random double between 0 and 1, so we need to multiply this with the number of possible IDs and cast it to an int.
     If the random ID is already in the set, the add method just returns false, and the loop wil run again.
      */
-    private static Set<Integer> randomBombIDGenerator(DifficultyLevel difficultyLevel) {
+    private static Set<Integer> randomBombIDGenerator(DifficultyLevel difficultyLevel, int tileID) {
         int numberOfBombs = difficultyLevel.getNumberOfBombs();
         int totalTiles = difficultyLevel.getNumberOfTiles();
+        List<Integer> excludedIDs = getAdjacentTileIDs(difficultyLevel, tileID);
+        return fillRandomBombIDSet(numberOfBombs, totalTiles, excludedIDs, tileID);
+    }
+
+    /*
+    This method was later adjusted because I changed the logic so that this method is called after the player first
+    clicks on a tile. This way, the clicked Tile, and the adjacent tiles can be excluded from the randomBombID set.
+     */
+    private static Set<Integer> fillRandomBombIDSet(int numberOfBombs, int totalTiles,
+                                                    List<Integer> excludedIDs, int tileID) {
         Set<Integer> bombIDs = new TreeSet<>();
         do {
-            bombIDs.add((int) (Math.random() * (totalTiles)));
+            int randomID = (int) (Math.random() * (totalTiles));
+            if (randomID != tileID && !excludedIDs.contains(randomID)) bombIDs.add(randomID);
         } while (bombIDs.size() < numberOfBombs);
         return bombIDs;
     }
@@ -72,7 +83,7 @@ public class CreateGameFieldFunctions {
         List<Tile> allTiles = gamefield.getGameFieldTiles();
         List<Tile> adjacentTiles = new ArrayList<>();
         int totalTiles = allTiles.size();
-        for (int adjacentTileID : getAdjacentTileIDs(gamefield, tileID)) {
+        for (int adjacentTileID : getAdjacentTileIDs(gamefield.getDifficulty(), tileID)) {
             if (adjacentTileID >= 0 && adjacentTileID < totalTiles) {
                 adjacentTiles.add(allTiles.get(adjacentTileID));
             }
@@ -81,26 +92,26 @@ public class CreateGameFieldFunctions {
     }
 
     /*
-    The getAdjacentTileIDs method returns an array containing the IDs of the tiles adjacent to the Tile with the given
+    The getAdjacentTileIDs method returns a list containing the IDs of the tiles adjacent to the Tile with the given
     tileID. It needs the gameField as argument to determine the difficulty. Then it determines the IDs based on a
     position vector. Adding the number of tiles per row to the current tileID returns the tileID of the Tile right below
     the current tile. The other vectors are based on the same logic. If the current tile is on the first or last column
     it will have only 5 adjacent tiles instead of 8. So this must be checked.
      */
-    public static int[] getAdjacentTileIDs(GameField gameField, int tileID) {
-        int tilesPerRow = gameField.getDifficulty().getFieldLengthInTiles();
-        int[] adjacentTileIds;
-        if (isFirstColumn(gameField, tileID)) {
-            adjacentTileIds = new int[]{tileID + 1, tileID - tilesPerRow, tileID - tilesPerRow + 1,
-                    tileID + tilesPerRow, tileID + tilesPerRow + 1};
-        } else if (isLastColumn(gameField, tileID)) {
-            adjacentTileIds = new int[]{tileID - 1, tileID - tilesPerRow - 1,
+    public static List<Integer> getAdjacentTileIDs(DifficultyLevel difficultyLevel, int tileID) {
+        int tilesPerRow = difficultyLevel.getFieldLengthInTiles();
+        List<Integer> adjacentTileIds;
+        if (isFirstColumn(difficultyLevel, tileID)) {
+            adjacentTileIds = Arrays.asList(tileID + 1, tileID - tilesPerRow, tileID - tilesPerRow + 1,
+                    tileID + tilesPerRow, tileID + tilesPerRow + 1);
+        } else if (isLastColumn(difficultyLevel, tileID)) {
+            adjacentTileIds = Arrays.asList(tileID - 1, tileID - tilesPerRow - 1,
                     tileID - tilesPerRow, tileID + tilesPerRow,
-                    tileID + tilesPerRow - 1};
+                    tileID + tilesPerRow - 1);
         } else {
-            adjacentTileIds = new int[]{tileID - 1, tileID + 1, tileID - tilesPerRow - 1,
+            adjacentTileIds = Arrays.asList(tileID - 1, tileID + 1, tileID - tilesPerRow - 1,
                     tileID - tilesPerRow, tileID - tilesPerRow + 1, tileID + tilesPerRow,
-                    tileID + tilesPerRow - 1, tileID + tilesPerRow + 1};
+                    tileID + tilesPerRow - 1, tileID + tilesPerRow + 1);
         }
         return adjacentTileIds;
     }
@@ -108,16 +119,16 @@ public class CreateGameFieldFunctions {
     /*
     isFirstColumn determines if the given tileID is on the first column
      */
-    private static boolean isFirstColumn(GameField gameField, int tileID) {
-        int tilesPerRow = gameField.getDifficulty().getFieldLengthInTiles();
+    private static boolean isFirstColumn(DifficultyLevel difficultyLevel, int tileID) {
+        int tilesPerRow = difficultyLevel.getFieldLengthInTiles();
         return tileID % tilesPerRow == 0;
     }
 
     /*
     isLastColumn determines if the given tileID is on the last column
      */
-    private static boolean isLastColumn(GameField gameField, int tileID) {
-        int tilesPerRow = gameField.getDifficulty().getFieldLengthInTiles();
+    private static boolean isLastColumn(DifficultyLevel difficultyLevel, int tileID) {
+        int tilesPerRow = difficultyLevel.getFieldLengthInTiles();
         return (tileID + 1) % tilesPerRow == 0;
     }
 }

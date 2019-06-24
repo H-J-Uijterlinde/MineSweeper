@@ -23,6 +23,7 @@ which they will often need.
 
 public class GameInterface {
 
+    private DifficultyLevel difficultyLevel;
     private int NUMBER_OF_ROWS;
     private int NUMBER_OF_COLUMNS;
     private int NUMBER_OF_TILES;
@@ -31,16 +32,18 @@ public class GameInterface {
     private List<TileUserInterface> gameFieldTiles;
     private JLabel bombImage;
     private boolean gameOver;
+    private boolean firstClick;
     private JFrame gameFieldUserInterface;
     private TileContainer tileContainer;
     private int totalClickedtiles;
     private displayScorePanel scorePanel;
 
-    public GameInterface(GameField gameField) {
-        createGameSettings(gameField);
+    public GameInterface(DifficultyLevel difficultyLevel) {
+        createGameSettings(difficultyLevel);
         createGameUserInterface();
         bombImage = setBombImage();
         gameOver = false;
+        firstClick = true;
     }
 
     /*
@@ -66,17 +69,16 @@ public class GameInterface {
     }
 
     /*
-    The createGameSettings method determines the number of rows, columns and total tiles based on the abstract
-    GameField created by the game engine. The engine is the not GUI part of the application, where a visual gameboard
-    is created based on the selected difficulty level.
+    The createGameSettings method determines the number of rows, columns and total tiles based on the DifficultyLevel
+    selected by the player.
      */
 
-    private void createGameSettings(GameField gameField) {
-        this.gameField = gameField;
-        NUMBER_OF_ROWS = gameField.getDifficulty().getFieldWidthInTiles();
-        NUMBER_OF_COLUMNS = gameField.getDifficulty().getFieldLengthInTiles();
-        NUMBER_OF_TILES = gameField.getDifficulty().getNumberOfTiles();
-        NUMBER_OF_BOMBS = gameField.getDifficulty().getNumberOfBombs();
+    private void createGameSettings(DifficultyLevel difficultyLevel) {
+        this.difficultyLevel = difficultyLevel;
+        NUMBER_OF_ROWS = difficultyLevel.getFieldWidthInTiles();
+        NUMBER_OF_COLUMNS = difficultyLevel.getFieldLengthInTiles();
+        NUMBER_OF_TILES = difficultyLevel.getNumberOfTiles();
+        NUMBER_OF_BOMBS = difficultyLevel.getNumberOfBombs();
     }
 
     /*
@@ -228,6 +230,10 @@ public class GameInterface {
         gameOver = false;
     }
 
+    private void resetFirstClick() {
+        firstClick = true;
+    }
+
     /*
     The main component of the GUI will be the playing field, this is represented by the TileContainer class. As the
     name implies the TileContainer class acts as a container holding the actual tiles. The tiles are spread out in a
@@ -269,26 +275,24 @@ public class GameInterface {
 
         void resetGame() {
             removeAll();
-            DifficultyLevel currentDifficulty = gameField.getDifficulty();
-            gameField = GameField.restartGame(currentDifficulty);
             addTiles();
             validate();
             resetGameOver();
+            resetFirstClick();
             totalClickedtiles = 0;
             scorePanel.displayScore();
-            System.out.println(gameField);
         }
 
-        void resetGame(DifficultyLevel difficulty) {
-            createGameSettings(GameField.restartGame(difficulty));
+        void resetGame(DifficultyLevel difficultyLevel) {
+            createGameSettings(difficultyLevel);
             tileContainer.setLayout(new GridLayout(NUMBER_OF_ROWS, NUMBER_OF_COLUMNS));
             removeAll();
             addTiles();
             validate();
             resetGameOver();
+            resetFirstClick();
             totalClickedtiles = 0;
             scorePanel.displayScore();
-            System.out.println(gameField);
         }
     }
 
@@ -351,7 +355,7 @@ public class GameInterface {
 
         /*
          The determineMouseClickEvents method determines if the user clicked right or left using static methods from
-         SwingUtilities. If the player right clicked on a tile thas has not yet been clicked on, the setFlagIcon method
+         SwingUtilities. If the player right clicked on a tile that has not yet been clicked on, the setFlagIcon method
          is called. If the player left clicked on a tile, it first removes possible icons set earlier, then the clicked
          status is set to true, and the leftMouseClickEvents method is called.
          */
@@ -361,11 +365,28 @@ public class GameInterface {
                 removeAll();
                 if (!isClicked() && !gameOver) setFlagIcon();
             } else if (SwingUtilities.isLeftMouseButton(e)) {
-                if (!isClicked() && !gameOver) {
-                    removeAll();
-                    setClicked();
-                    leftMouseClickEvents(tileID);
-                }
+                determineFirstClick(tileID);
+            }
+        }
+
+        /*
+        The determineFirstClick method is very important. Because I chose to make it impossible to click a bomb on the
+        first click, so as not to be game over because of just bad luck, the abstraction of the game field is set only
+        after the first click. The first click of a player results in a call to the restartGame method of the GameField
+        class. This method takes the difficulty level and the clicked tile's ID as parameters. The game engine, the not
+        GUI part of the code, returns a GameField in which the clicked tile, and its adjacent tiles, cannot contain
+        a bomb.
+         */
+
+        private void determineFirstClick(int tileID) {
+            if (firstClick) {
+                firstClick = false;
+                gameField = GameField.restartGame(difficultyLevel, tileID);
+            }
+            if (!isClicked() && !gameOver) {
+                removeAll();
+                setClicked();
+                leftMouseClickEvents(tileID);
             }
         }
 
@@ -438,7 +459,8 @@ public class GameInterface {
          */
 
         private synchronized List<TileUserInterface> getUnclickedAdjacentTiles(GameField gamefield, int tileID) {
-            int[] adjacentTileIDs = CreateGameFieldFunctions.getAdjacentTileIDs(gameField, tileID);
+            List<Integer> adjacentTileIDs = CreateGameFieldFunctions.
+                    getAdjacentTileIDs(gamefield.getDifficulty(), tileID);
             int numTiles = gamefield.getDifficulty().getNumberOfTiles();
             List<TileUserInterface> adjacentUnclickedTiles = new ArrayList<>();
             for (int i : adjacentTileIDs) {
