@@ -8,10 +8,9 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,7 +88,31 @@ public class GameInterface {
     private JMenuBar createMenu() {
         JMenuBar menu = new JMenuBar();
         menu.add(createOptionsMenu());
+        menu.add(createHighScoreMenu());
+        menu.add(createHelpMenu());
         return menu;
+    }
+
+    private JMenu createHelpMenu() {
+        JMenu helpMenu = new JMenu("Help");
+        JMenuItem howToPlay = new JMenuItem("How to play?");
+        helpMenu.add(howToPlay);
+        //Todo create help menu
+        return helpMenu;
+    }
+
+    private JMenu createHighScoreMenu() {
+        JMenu highScoreMenu = new JMenu("High Scores");
+        JMenuItem beginnerHighScores = new JMenuItem("Beginner");
+        JMenuItem intermediateHighScores = new JMenuItem("Intermediate");
+        JMenuItem expertHighScores = new JMenuItem("Expert");
+        highScoreMenu.add(beginnerHighScores);
+        highScoreMenu.addSeparator();
+        highScoreMenu.add(intermediateHighScores);
+        highScoreMenu.addSeparator();
+        highScoreMenu.add(expertHighScores);
+        return highScoreMenu;
+        //Todo creeate methods to keep track of highscores per difficulty level.
     }
 
     /*
@@ -305,49 +328,61 @@ public class GameInterface {
             addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-
-                    // determine if the user clicked right or left using static methods from SwingUtilities.
-
-                    if (SwingUtilities.isRightMouseButton(e)) {
-                        removeAll();
-                        if (!isClicked() && !gameOver) setFlagIcon();
-                    } else if (SwingUtilities.isLeftMouseButton(e)) {
-                        if (!isClicked() && !gameOver) {
-                            removeAll();
-                            setClicked();
-                            if (gameField.getGameFieldTiles().get(tileID).isBomb()) {
-                                setBombIcon();
-                                gameOverSequence(tileID);
-
-                            } else {
-                                setNumberOfBombsIcon(gameField, tileID);
-                                determineVictory();
-                                scorePanel.displayScore();
-                            }
-                        }
-                    }
+                    determineMouseClickEvents(e, tileID);
                 }
 
                 @Override
                 public void mousePressed(MouseEvent e) {
-
                 }
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
-
                 }
 
                 @Override
                 public void mouseEntered(MouseEvent e) {
-
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
-
                 }
             });
+        }
+
+        /*
+         The determineMouseClickEvents method determines if the user clicked right or left using static methods from
+         SwingUtilities. If the player right clicked on a tile thas has not yet been clicked on, the setFlagIcon method
+         is called. If the player left clicked on a tile, it first removes possible icons set earlier, then the clicked
+         status is set to true, and the leftMouseClickEvents method is called.
+         */
+
+        private void determineMouseClickEvents(MouseEvent e, int tileID) {
+            if (SwingUtilities.isRightMouseButton(e)) {
+                removeAll();
+                if (!isClicked() && !gameOver) setFlagIcon();
+            } else if (SwingUtilities.isLeftMouseButton(e)) {
+                if (!isClicked() && !gameOver) {
+                    removeAll();
+                    setClicked();
+                    leftMouseClickEvents(tileID);
+                }
+            }
+        }
+
+        /*
+        The leftMouseClickEvents method determines if the player clicked on a bombTile or not, and calls the
+        corresponding methods.
+         */
+
+        private void leftMouseClickEvents(int tileID) {
+            if (gameField.getGameFieldTiles().get(tileID).isBomb()) {
+                setBombIcon();
+                gameOverSequence(tileID);
+
+            } else {
+                setNumberOfBombsIcon(gameField, tileID);
+                determineVictory();
+            }
         }
 
         /*
@@ -535,18 +570,50 @@ public class GameInterface {
      */
 
     private class displayScorePanel extends JPanel {
+        LocalTime startingTime;
 
         displayScorePanel() {
-            setPreferredSize(new Dimension(100, 25));
-            add(new JLabel("Tiles left: " + (NUMBER_OF_TILES - NUMBER_OF_BOMBS)));
-            validate();
+            super(new BorderLayout());
+            setPreferredSize(new Dimension(200, 25));
+            displayScore();
         }
 
         private void displayScore() {
+            startingTime = LocalTime.now();
+            Thread t = new Thread(() -> {
+                do {
+                    refreshScoreLabels();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } while (!gameOver);
+            });
+            t.start();
+        }
+
+        private void refreshScoreLabels() {
             int tilesLeft = NUMBER_OF_TILES - NUMBER_OF_BOMBS - totalClickedtiles;
             removeAll();
-            add(new JLabel("Tiles left: " + tilesLeft));
+            add(new JLabel("   Tiles left: " + tilesLeft), BorderLayout.WEST);
+            add(new JLabel("Time elapsed: " + calculateTimeElapsed() + "  "), BorderLayout.EAST);
             validate();
+        }
+
+        private String calculateTimeElapsed() {
+            LocalTime currentTime = LocalTime.now();
+            long secondsElapsed = Duration.between(startingTime, currentTime).getSeconds();
+            return formatTimeElapsed(secondsElapsed);
+        }
+
+        private String formatTimeElapsed(long secondsElapsed) {
+            if (secondsElapsed >= 3600) {
+                return String.format("%d:%02d:%02d", secondsElapsed / 3600,
+                        (secondsElapsed % 3600) / 60, (secondsElapsed % 60));
+            } else {
+                return String.format("%02d:%02d", (secondsElapsed % 3600) / 60, (secondsElapsed % 60));
+            }
         }
     }
 }
