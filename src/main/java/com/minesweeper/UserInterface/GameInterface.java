@@ -8,9 +8,13 @@ import com.minesweeper.gamefield.GameField;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.*;
 import java.util.ArrayList;
@@ -41,6 +45,7 @@ public class GameInterface {
     private int totalClickedtiles;
     private displayScorePanel scorePanel;
     private HighScoreUtils highscores;
+    private long timeElapsed;
 
     public GameInterface(DifficultyLevel difficultyLevel) {
         createGameSettings(difficultyLevel);
@@ -101,11 +106,25 @@ public class GameInterface {
         return menu;
     }
 
+    /*
+    The createHelpMenu adds a single JMenuItem to the Help menu. The how to play option contains an actionlistener,
+    which will check if it can create a Desktop Object from the players system, and if so, it will call the browse
+    action on the Desktop object to open a browser, and direct the player the the MineSweeper wiki page.
+     */
+
     private JMenu createHelpMenu() {
         JMenu helpMenu = new JMenu("Help");
         JMenuItem howToPlay = new JMenuItem("How to play?");
+        howToPlay.addActionListener(e -> {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    Desktop.getDesktop().browse(new URI("https://en.wikipedia.org/wiki/Minesweeper_(video_game)"));
+                } catch (IOException | URISyntaxException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
         helpMenu.add(howToPlay);
-        //Todo create help menu
         return helpMenu;
     }
 
@@ -209,23 +228,33 @@ public class GameInterface {
     elapsed.
      */
 
-    private void displayHighScores(List<HighScore> highScores) {
+    private void displayHighScores(List<? extends HighScore> highScores) {
         Collections.sort(highScores);
         JDialog highScoreDialog = new JDialog(gameFieldUserInterface, "Highscores");
-        highScoreDialog.setSize(200, 250);
+        highScoreDialog.setSize(200, 325);
         highScoreDialog.setLocationRelativeTo(gameFieldUserInterface);
         JPanel highscorePanel = new JPanel();
         highscorePanel.setLayout(new BoxLayout(highscorePanel, BoxLayout.PAGE_AXIS));
         highscorePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        int position = 1;
-        for (HighScore highScore : highScores) {
-            highscorePanel.add(new JLabel(position + ". " + highScore.getPlayerName() + "          "
-                    + scorePanel.formatTimeElapsed(highScore.getTimeElapsed())));
-            position++;
-        }
+        createSingleHighScorePanel(highScores, highscorePanel);
         highScoreDialog.add(highscorePanel);
         highScoreDialog.validate();
         highScoreDialog.setVisible(true);
+    }
+
+    private void createSingleHighScorePanel(List<? extends HighScore> highScores, JPanel highscorePanel) {
+        int position = 1;
+        for (HighScore highScore : highScores) {
+            JPanel singleScorePanel = new JPanel(new BorderLayout());
+            singleScorePanel.setSize(175, 5);
+            singleScorePanel
+                    .add(new JLabel(" " + position + ". " + highScore.getPlayerName()), BorderLayout.WEST);
+            singleScorePanel
+                    .add(new JLabel(scorePanel.formatTimeElapsed(highScore.getTimeElapsed()) + " "), BorderLayout.EAST);
+            singleScorePanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
+            highscorePanel.add(singleScorePanel, BorderLayout.NORTH);
+            position++;
+        }
     }
 
     /*
@@ -579,8 +608,8 @@ public class GameInterface {
             if (isHighScore) {
                 String playerName = (String) JOptionPane.showInputDialog(
                         gameFieldUserInterface,
-                        "You got a new highscore!\n"
-                                + "\"please enter your name\"",
+                        "       You got a new highscore!\n"
+                                + "        please enter your name: ",
                         "New HighScore!",
                         JOptionPane.PLAIN_MESSAGE,
                         null,
@@ -588,7 +617,7 @@ public class GameInterface {
                         null);
 
                 if ((playerName != null) && (playerName.length() > 0)) {
-                    highscores.addHighScore(difficultyLevel, scorePanel.calculateTimeElapsed(), playerName);
+                    highscores.addHighScore(difficultyLevel, timeElapsed, playerName);
                 }
             }
         }
@@ -722,7 +751,8 @@ public class GameInterface {
 
         private long calculateTimeElapsed() {
             LocalTime currentTime = LocalTime.now();
-            return Duration.between(startingTime, currentTime).getSeconds();
+            timeElapsed = Duration.between(startingTime, currentTime).getSeconds();
+            return timeElapsed;
         }
 
         /*
