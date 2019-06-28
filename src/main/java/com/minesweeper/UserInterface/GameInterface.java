@@ -1,17 +1,24 @@
 package com.minesweeper.UserInterface;
 
 import com.minesweeper.GameUtils.DifficultyLevel;
+import com.minesweeper.HighScores.HighScore;
+import com.minesweeper.HighScores.HighScoreUtils;
 import com.minesweeper.gamefield.CreateGameFieldFunctions;
 import com.minesweeper.gamefield.GameField;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /*
@@ -37,6 +44,8 @@ public class GameInterface {
     private TileContainer tileContainer;
     private int totalClickedtiles;
     private displayScorePanel scorePanel;
+    private HighScoreUtils highscores;
+    private long timeElapsed;
 
     public GameInterface(DifficultyLevel difficultyLevel) {
         createGameSettings(difficultyLevel);
@@ -44,6 +53,8 @@ public class GameInterface {
         bombImage = setBombImage();
         gameOver = false;
         firstClick = true;
+        highscores = HighScoreUtils.createHighScores();
+
     }
 
     /*
@@ -95,26 +106,26 @@ public class GameInterface {
         return menu;
     }
 
+    /*
+    The createHelpMenu adds a single JMenuItem to the Help menu. The how to play option contains an actionlistener,
+    which will check if it can create a Desktop Object from the players system, and if so, it will call the browse
+    action on the Desktop object to open a browser, and direct the player the the MineSweeper wiki page.
+     */
+
     private JMenu createHelpMenu() {
         JMenu helpMenu = new JMenu("Help");
         JMenuItem howToPlay = new JMenuItem("How to play?");
+        howToPlay.addActionListener(e -> {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    Desktop.getDesktop().browse(new URI("https://en.wikipedia.org/wiki/Minesweeper_(video_game)"));
+                } catch (IOException | URISyntaxException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
         helpMenu.add(howToPlay);
-        //Todo create help menu
         return helpMenu;
-    }
-
-    private JMenu createHighScoreMenu() {
-        JMenu highScoreMenu = new JMenu("High Scores");
-        JMenuItem beginnerHighScores = new JMenuItem("Beginner");
-        JMenuItem intermediateHighScores = new JMenuItem("Intermediate");
-        JMenuItem expertHighScores = new JMenuItem("Expert");
-        highScoreMenu.add(beginnerHighScores);
-        highScoreMenu.addSeparator();
-        highScoreMenu.add(intermediateHighScores);
-        highScoreMenu.addSeparator();
-        highScoreMenu.add(expertHighScores);
-        return highScoreMenu;
-        //Todo creeate methods to keep track of highscores per difficulty level.
     }
 
     /*
@@ -168,6 +179,83 @@ public class GameInterface {
         return selectDifficultyMenu;
     }
 
+    /*
+    In the next section, the high score menu will be create. In the createHighScoreMenu method, JMenuItems for
+    beginner, intermediate and expert high scores are added to a JMenu. The action listeners call the getHighScore
+    method.
+     */
+
+    private JMenu createHighScoreMenu() {
+        JMenu highScoreMenu = new JMenu("High Scores");
+        JMenuItem beginnerHighScores = new JMenuItem("Beginner");
+        beginnerHighScores.addActionListener(e -> getHighScores(DifficultyLevel.BEGINNER));
+        JMenuItem intermediateHighScores = new JMenuItem("Intermediate");
+        intermediateHighScores.addActionListener(e -> getHighScores(DifficultyLevel.INTERMEDIATE));
+        JMenuItem expertHighScores = new JMenuItem("Expert");
+        expertHighScores.addActionListener(e -> getHighScores(DifficultyLevel.EXPERT));
+        highScoreMenu.add(beginnerHighScores);
+        highScoreMenu.addSeparator();
+        highScoreMenu.add(intermediateHighScores);
+        highScoreMenu.addSeparator();
+        highScoreMenu.add(expertHighScores);
+        return highScoreMenu;
+    }
+
+    /*
+    The getHighScores method consists of a switch statement, determining which list of high scores to display
+     */
+
+    private void getHighScores(DifficultyLevel difficultyLevel) {
+        switch (difficultyLevel) {
+            case BEGINNER: {
+                displayHighScores(highscores.getBeginnerHighScores());
+                break;
+            }
+            case INTERMEDIATE: {
+                displayHighScores(highscores.getIntermediateHighScores());
+                break;
+            }
+            case EXPERT: {
+                displayHighScores(highscores.getExpertHighScores());
+                break;
+            }
+        }
+    }
+
+    /*
+    The displayHighScores method creates a JDialog. It adds a JPanel to the Dialog, and for each HighScore in the list
+    of HighScores, it adds a JLabel containing the position on the leader board, the name of the player, and the time
+    elapsed.
+     */
+
+    private void displayHighScores(List<? extends HighScore> highScores) {
+        Collections.sort(highScores);
+        JDialog highScoreDialog = new JDialog(gameFieldUserInterface, "Highscores");
+        highScoreDialog.setSize(200, 325);
+        highScoreDialog.setLocationRelativeTo(gameFieldUserInterface);
+        JPanel highscorePanel = new JPanel();
+        highscorePanel.setLayout(new BoxLayout(highscorePanel, BoxLayout.PAGE_AXIS));
+        highscorePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        createSingleHighScorePanel(highScores, highscorePanel);
+        highScoreDialog.add(highscorePanel);
+        highScoreDialog.validate();
+        highScoreDialog.setVisible(true);
+    }
+
+    private void createSingleHighScorePanel(List<? extends HighScore> highScores, JPanel highscorePanel) {
+        int position = 1;
+        for (HighScore highScore : highScores) {
+            JPanel singleScorePanel = new JPanel(new BorderLayout());
+            singleScorePanel.setSize(175, 5);
+            singleScorePanel
+                    .add(new JLabel(" " + position + ". " + highScore.getPlayerName()), BorderLayout.WEST);
+            singleScorePanel
+                    .add(new JLabel(scorePanel.formatTimeElapsed(highScore.getTimeElapsed()) + " "), BorderLayout.EAST);
+            singleScorePanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
+            highscorePanel.add(singleScorePanel, BorderLayout.NORTH);
+            position++;
+        }
+    }
 
     /*
     The Method setBombImage is added here, because caching the bomb image on starting the game gives great performance
@@ -280,7 +368,7 @@ public class GameInterface {
             resetGameOver();
             resetFirstClick();
             totalClickedtiles = 0;
-            scorePanel.displayScore();
+            resetScorePanel();
         }
 
         void resetGame(DifficultyLevel difficultyLevel) {
@@ -292,8 +380,16 @@ public class GameInterface {
             resetGameOver();
             resetFirstClick();
             totalClickedtiles = 0;
-            scorePanel.displayScore();
+            resetScorePanel();
         }
+    }
+
+    private void resetScorePanel() {
+        gameFieldUserInterface.remove(scorePanel);
+        scorePanel = new displayScorePanel();
+        gameFieldUserInterface.add(scorePanel, BorderLayout.SOUTH);
+        gameFieldUserInterface.validate();
+        scorePanel.displayScore();
     }
 
     /*
@@ -495,9 +591,34 @@ public class GameInterface {
             int tilesToClick = NUMBER_OF_TILES - NUMBER_OF_BOMBS;
             if (tilesToClick - totalClickedtiles == 0) {
                 setGameOver();
+                displayEnterHigScore();
                 displayEndMessage("images/victory.png",
                         "Would you like to play again?",
                         "Victorious");
+            }
+        }
+
+        /*
+        The displayEnterHighScore method first determines if the score is good enough to be added to the list of
+        HighScores. If true, it creates a JDialog asking the player to enter his/ her name. If a name is entered,
+        a new HighScore is added to the list.
+         */
+        private void displayEnterHigScore() {
+            boolean isHighScore = highscores.determineIfHighScore(difficultyLevel, scorePanel.calculateTimeElapsed());
+            if (isHighScore) {
+                String playerName = (String) JOptionPane.showInputDialog(
+                        gameFieldUserInterface,
+                        "       You got a new highscore!\n"
+                                + "        please enter your name: ",
+                        "New HighScore!",
+                        JOptionPane.PLAIN_MESSAGE,
+                        null,
+                        null,
+                        null);
+
+                if ((playerName != null) && (playerName.length() > 0)) {
+                    highscores.addHighScore(difficultyLevel, timeElapsed, playerName);
+                }
             }
         }
 
@@ -588,7 +709,7 @@ public class GameInterface {
 
     /*
     The displayScorePanel is a JPanel that holds another JPanel which displays the number of tiles the player still
-    has to click on to win the game. It has one method, displayScore, which resets the JLabel containing the score.
+    has to click on to win the game.
      */
 
     private class displayScorePanel extends JPanel {
@@ -600,6 +721,11 @@ public class GameInterface {
             displayScore();
         }
 
+        /*
+        In order to keep track of the time that has elapsed since the start of the game, the DisplayScore method runs
+        in a separate thread, and refreshes the ScoreLabel with every pass through the do/ while loop. In order to save
+        stack space, the thread sleeps for 1 second on every run through the loop.
+         */
         private void displayScore() {
             startingTime = LocalTime.now();
             Thread t = new Thread(() -> {
@@ -619,16 +745,20 @@ public class GameInterface {
             int tilesLeft = NUMBER_OF_TILES - NUMBER_OF_BOMBS - totalClickedtiles;
             removeAll();
             add(new JLabel("   Tiles left: " + tilesLeft), BorderLayout.WEST);
-            add(new JLabel("Time elapsed: " + calculateTimeElapsed() + "  "), BorderLayout.EAST);
+            add(new JLabel("Time elapsed: " + formatTimeElapsed(calculateTimeElapsed()) + "  "), BorderLayout.EAST);
             validate();
         }
 
-        private String calculateTimeElapsed() {
+        private long calculateTimeElapsed() {
             LocalTime currentTime = LocalTime.now();
-            long secondsElapsed = Duration.between(startingTime, currentTime).getSeconds();
-            return formatTimeElapsed(secondsElapsed);
+            timeElapsed = Duration.between(startingTime, currentTime).getSeconds();
+            return timeElapsed;
         }
 
+        /*
+        The formatTimeElapsed method formats the time elapsed into a more aesthetically pleasing String format.
+        It distinguishes between times over or under 1 hour.
+         */
         private String formatTimeElapsed(long secondsElapsed) {
             if (secondsElapsed >= 3600) {
                 return String.format("%d:%02d:%02d", secondsElapsed / 3600,
