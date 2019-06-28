@@ -1,4 +1,4 @@
-"# MineSweeper"
+# MineSweeper
 
 First real solo project.
 The goal is to apply everything I have learned so far.
@@ -9,7 +9,7 @@ After cloning the source code run, the following command from the applications r
 mvn clean package
 
 This produces an executable jar file which can be run from the applications target folder by running the following command: 
-java -jar MineSweeper-1.0-SNAPSHOT.jar
+java -jar MineSweeper-1.0-SNAPSHOT-spring-boot.jar
 
 you can move the jar file from the applications target directory to anywhere you like, and run it just by double clicking on it.
 
@@ -25,3 +25,6 @@ I decided to implement one additional change, considering my primary goal was to
 
 # 24-06-2019
 The backlog filled pretty quickly, with interesting additions, so I decided to do a second short sprint. I added several new options to the game. Most notably the score panel, which keeps track of the remaining tiles, and the time elapsed. The logic of the game was also changed, the first click can never be a bomb. The abstraction of the gamefield gets created only after the first click.
+
+# 28-06-2019
+Implemented several new options. I created an api to add highscores. I also created a RESTfull webservice which is able to store and retrieve high scores from a database. The REST api is deployed on heroku, so when playing the game, you can actually compete against other players. For now I consider this project finished. 
